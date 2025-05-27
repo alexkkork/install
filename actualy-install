@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+
+APP_NAME="Oblivion UI.app"
+ZIP_NAME="Oblivion UI.zip"
+DEST_DIR="/Applications"
+ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/Oblivion%20UI.zip"
+
+echo "🔽 Downloading $ZIP_NAME from GitHub..."
+curl -L -o "$ZIP_NAME" "$ZIP_URL"
+
+echo "📦 Unzipping $ZIP_NAME..."
+unzip -o "$ZIP_NAME"
+
+echo "🚚 Moving $APP_NAME to $DEST_DIR..."
+mv -f "$APP_NAME" "$DEST_DIR/"
+
+echo "🔒 Setting permissions..."
+chmod -R +x "$DEST_DIR/$APP_NAME/Contents/MacOS"
+
+echo "✅ Installation complete!"
+echo "🚀 Launching the app..."
+open "$DEST_DIR/$APP_NAME"
