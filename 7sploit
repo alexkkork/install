@@ -7,55 +7,67 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
+CYAN='\033[1;36m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Vars
+# Variables
 ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
 ZIP_NAME="7sploit.zip"
 APP_NAME="7sploit.app"
+APP_PATH="/Applications/$APP_NAME"
 TMP_DIR="/tmp/7sploit_installer"
 
 # Functions
-info()    { echo -e "${BLUE}🔧 $1${NC}"; }
+info()    { echo -e "${CYAN}🔧 $1${NC}"; }
 success() { echo -e "${GREEN}✅ $1${NC}"; }
 warn()    { echo -e "${YELLOW}⚠️  $1${NC}"; }
 error()   { echo -e "${RED}❌ $1${NC}"; }
 
-# Start
+# Banner
 clear
-echo -e "${BOLD}🧠  Installing 7Sploit...${NC}"
+echo -e "${BLUE}${BOLD}"
+echo "███████╗███████╗██████╗ ██╗      ██████╗ ██╗████████╗"
+echo "██╔════╝██╔════╝██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝"
+echo "███████╗█████╗  ██████╔╝██║     ██║   ██║██║   ██║   "
+echo "╚════██║██╔══╝  ██╔═══╝ ██║     ██║   ██║██║   ██║   "
+echo "███████║███████╗██║     ███████╗╚██████╔╝██║   ██║   "
+echo "╚══════╝╚══════╝╚═╝     ╚══════╝ ╚═════╝ ╚═╝   ╚═╝   "
+echo -e "${NC}${BOLD}"
+echo -e "                by Alex and 7Sleeps"
+echo -e "${NC}\n"
 
-# Create temp dir
-info "Creating temp directory..."
+# Check if already installed
+if [ -d "$APP_PATH" ]; then
+    success "7Sploit is already installed."
+    info "Launching 7Sploit..."
+    open -a "$APP_PATH"
+    exit 0
+fi
+
+# Begin installation
+info "7Sploit not found. Proceeding with installation..."
 mkdir -p "$TMP_DIR"
 cd "$TMP_DIR"
 
-# Download
-info "Downloading ${ZIP_NAME} from GitHub..."
+info "Downloading 7Sploit from GitHub..."
 curl -L --progress-bar "$ZIP_URL" -o "$ZIP_NAME"
 
-# Unzip
-info "Unpacking application..."
+info "Unpacking 7Sploit..."
 unzip -q "$ZIP_NAME"
 
-# Check unzip
 if [ ! -d "$APP_NAME" ]; then
     error "$APP_NAME not found after unzipping. Exiting."
     exit 1
 fi
 
-# Move
 info "Installing to /Applications..."
-sudo mv -f "$APP_NAME" /Applications/
+sudo mv -f "$APP_NAME" "$APP_PATH"
 
-# Launch
-info "Launching 7Sploit..."
-open -a "/Applications/$APP_NAME"
-
-# Cleanup
-info "Cleaning up..."
+info "Cleaning up temporary files..."
 rm -rf "$TMP_DIR"
 
-# Done
-success "7Sploit has been successfully installed and launched! 🚀"
+info "Launching 7Sploit..."
+open -a "$APP_PATH"
+
+success "🎉 7Sploit has been successfully installed and launched!"
