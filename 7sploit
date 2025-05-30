@@ -1,184 +1,61 @@
 #!/bin/bash
 
-# This script downloads a specified file with a progress bar
-# and then attempts to launch it using the system's default opener.
+set -e
 
-# --- Configuration ---
-# IMPORTANT: Replace with the actual URL of the file you want to download.
-DOWNLOAD_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
 
-# Define the directory where the file will be saved.
-# Using /tmp for temporary files, or you can change it to "$HOME/Downloads" for persistence.
-# Ensure this directory is writable by the user running the script.
-DOWNLOAD_DIR="/tmp" 
+# Vars
+ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
+ZIP_NAME="7sploit.zip"
+APP_NAME="7sploit.app"
+TMP_DIR="/tmp/7sploit_installer"
 
-# Define the local filename for the downloaded ZIP archive.
-ZIP_FILE_NAME="7sploit.zip"
+# Functions
+info()    { echo -e "${BLUE}🔧 $1${NC}"; }
+success() { echo -e "${GREEN}✅ $1${NC}"; }
+warn()    { echo -e "${YELLOW}⚠️  $1${NC}"; }
+error()   { echo -e "${RED}❌ $1${NC}"; }
 
-# Full path where the ZIP file will be saved
-DOWNLOAD_PATH="${DOWNLOAD_DIR}/${ZIP_FILE_NAME}"
+# Start
+clear
+echo -e "${BOLD}🧠  Installing 7Sploit...${NC}"
 
-# Define the name of the directory that will be created when unzipping.
-# This is typically the name of the top-level folder inside the zip.
-EXTRACTED_DIR_NAME="7sploit" # Assuming the zip extracts to a folder named '7sploit'
+# Create temp dir
+info "Creating temp directory..."
+mkdir -p "$TMP_DIR"
+cd "$TMP_DIR"
 
-# Full path to the extracted directory
-EXTRACTED_PATH="${DOWNLOAD_DIR}/${EXTRACTED_DIR_NAME}"
+# Download
+info "Downloading ${ZIP_NAME} from GitHub..."
+curl -L --progress-bar "$ZIP_URL" -o "$ZIP_NAME"
 
-# Define the target executable or application bundle to launch AFTER unzipping.
-# For macOS, this is typically the .app bundle inside the extracted folder.
-# For Linux, it might be a specific executable file.
-LAUNCH_TARGET="${EXTRACTED_PATH}/7Sploit.app" # Assuming the app is named 7Sploit.app inside the extracted folder
+# Unzip
+info "Unpacking application..."
+unzip -q "$ZIP_NAME"
 
-# --- Terminal Colors (for a better visual experience) ---
-GREEN='\033[0;32m' # Green text for success messages
-BLUE='\033[0;34m'  # Blue text for informational messages
-YELLOW='\033[0;33m' # Yellow text for warnings
-RED='\033[0;31m'   # Red text for error messages
-NC='\033[0m'       # No Color - Resets text color to default
-
-# --- Functions ---
-
-# Function to display a stylish header
-display_header() {
-    clear # Clear the terminal for a clean display
-    echo -e "${BLUE}
- _______  _______  _______ _________ _______  _______ _________
-(  ____ )(  ____ )(  ___  )\__   __/(  ____ \(  ____ )\__   __/
-| (    )|| (    )|| (   ) |   ) (   | (    )|| (    )|   ) (   
-| (____)|| (____)|| (___) |   | |   | (____)|| (____)|   | |   
-|     __)|     __)|  ___  |   | |   |     __)|     __)|   | |   
-| (\ (   | (\ (   | (   ) |   | |   | (\ (   | (\ (   | |   
-| ) \ \__| ) \ \__| )   ( |   | |   | ) \ \__| ) \ \__| |   
-|/   \__/|/   \__/|/     \|   )_(   |/   \__/|/   \__/   )_(   
-                                                                
-${NC}"
-    echo -e "${GREEN}  7Sploit Downloader & Launcher${NC}"
-    echo -e "${YELLOW}  -----------------------------${NC}"
-    echo ""
-}
-
-# Function to download the file with progress
-download_file() {
-    echo -e "${BLUE}  Starting download...${NC}"
-    echo -e "  Source: ${YELLOW}${DOWNLOAD_URL}${NC}"
-    echo -e "  Destination: ${YELLOW}${DOWNLOAD_PATH}${NC}"
-    echo ""
-
-    # Create the download directory if it doesn't exist
-    mkdir -p "${DOWNLOAD_DIR}"
-
-    # Use curl for downloading with a progress bar
-    # -L: Follow HTTP redirects
-    # -o "${DOWNLOAD_PATH}": Save the output to the specified file path
-    # -#: Show a simple, compact progress bar (good for scripts)
-    # -f: Fail silently on HTTP errors (e.g., 404 Not Found)
-    # --retry 3: Retry the download up to 3 times on transient network errors
-    # --retry-delay 5: Wait 5 seconds between retries
-    if curl -L -o "${DOWNLOAD_PATH}" -# -f --retry 3 --retry-delay 5 "${DOWNLOAD_URL}"; then
-        echo -e "\n${GREEN}  Download complete!${NC}"
-        return 0 # Indicate success
-    else
-        echo -e "\n${RED}  Error: Download failed!${NC}"
-        echo -e "  Please check the URL, your internet connection, or try again."
-        return 1 # Indicate failure
-    fi
-}
-
-# Function to extract the zip file
-extract_zip() {
-    echo -e "\n${BLUE}  Extracting '${ZIP_FILE_NAME}'...${NC}"
-    
-    # Check if 'unzip' is installed
-    if ! command -v unzip &> /dev/null; then
-        echo -e "${RED}Error: 'unzip' is not installed or not in your PATH.${NC}"
-        echo -e "  Please install 'unzip' to proceed. For example:"
-        echo -e "  ${YELLOW}  On Debian/Ubuntu: sudo apt-get install unzip${NC}"
-        echo -e "  ${YELLOW}  On macOS (usually pre-installed, or brew install unzip if missing)${NC}"
-        return 1
-    fi
-
-    # Remove any existing extracted directory to ensure a clean extraction
-    if [[ -d "${EXTRACTED_PATH}" ]]; then
-        echo -e "${YELLOW}  Removing existing extracted directory: ${EXTRACTED_PATH}${NC}"
-        rm -rf "${EXTRACTED_PATH}"
-    fi
-
-    # Unzip the file into the DOWNLOAD_DIR
-    # -q: Quiet mode (suppress most output)
-    # -o: Overwrite existing files WITHOUT prompting
-    # -d "${DOWNLOAD_DIR}": Extract files into the specified directory
-    # -qq: Even quieter, suppresses warnings about __MACOSX files
-    # < /dev/null: Redirect stdin from /dev/null to prevent unzip from asking for input
-    if unzip -q -o "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}" < /dev/null; then
-        echo -e "${GREEN}  Extraction complete!${NC}"
-        return 0
-    else
-        echo -e "${RED}  Error: Failed to extract '${ZIP_FILE_NAME}'.${NC}"
-        echo -e "  The ZIP file might be corrupted or incomplete."
-        return 1
-    fi
-}
-
-# Function to launch the downloaded file
-launch_application() {
-    if [[ -e "${LAUNCH_TARGET}" ]]; then # -e checks if file exists (can be any type)
-        echo -e "\n${BLUE}  Attempting to launch '${LAUNCH_TARGET}'...${NC}"
-        
-        # Detect OS and use appropriate command to open the file
-        if [[ "$(uname)" == "Darwin" ]]; then
-            # macOS: 'open' command for .app bundles
-            open "${LAUNCH_TARGET}"
-        elif [[ "$(uname)" == "Linux" ]]; then
-            # Linux: Check if it's an executable and run it, or use xdg-open for desktop files
-            if [[ -x "${LAUNCH_TARGET}" ]]; then # -x checks if file is executable
-                "${LAUNCH_TARGET}" & # Run in background
-            else
-                xdg-open "${LAUNCH_TARGET}" # Try opening with default application
-            fi
-        else
-            echo -e "${YELLOW}  Warning: Cannot auto-launch on this operating system. Please open '${LAUNCH_TARGET}' manually.${NC}"
-            return 1 # Indicate partial success/warning
-        fi
-        
-        echo -e "${GREEN}  Launch command sent. Check your applications.${NC}"
-        return 0 # Indicate success
-    else
-        echo -e "${RED}  Error: Launch target not found at '${LAUNCH_TARGET}'. Cannot launch.${NC}"
-        return 1 # Indicate failure
-    fi
-}
-
-# --- Main Script Execution Flow ---
-
-# 1. Display the welcoming header
-display_header
-
-# 2. Check if 'curl' is installed, as it's required for downloading
-if ! command -v curl &> /dev/null; then
-    echo -e "${RED}Error: 'curl' is not installed or not in your PATH.${NC}"
-    echo -e "  Please install 'curl' to proceed. For example:"
-    echo -e "  ${YELLOW}  On macOS (with Homebrew): brew install curl${NC}"
-    echo -e "  ${YELLOW}  On Debian/Ubuntu: sudo apt-get install curl${NC}"
-    exit 1 # Exit if curl is not found
-fi
-
-# 3. Execute the download function
-if download_file; then
-    # 4. If download was successful, proceed to extract the file
-    if extract_zip; then
-        # 5. If extraction was successful, proceed to launch the application
-        launch_application
-    else
-        # 6. If extraction failed, inform the user and exit
-        echo -e "${RED}  Script terminated due to extraction error. Please resolve the issue and try again.${NC}"
-        exit 1
-    fi
-else
-    # 7. If download failed, inform the user and exit
-    echo -e "${RED}  Script terminated due to download error. Please resolve the issue and try again.${NC}"
+# Check unzip
+if [ ! -d "$APP_NAME" ]; then
+    error "$APP_NAME not found after unzipping. Exiting."
     exit 1
 fi
 
-echo -e "\n${YELLOW}  Script finished. Have a great day!${NC}"
-echo ""
+# Move
+info "Installing to /Applications..."
+sudo mv -f "$APP_NAME" /Applications/
+
+# Launch
+info "Launching 7Sploit..."
+open -a "/Applications/$APP_NAME"
+
+# Cleanup
+info "Cleaning up..."
+rm -rf "$TMP_DIR"
+
+# Done
+success "7Sploit has been successfully installed and launched! 🚀"
