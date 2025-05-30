@@ -106,8 +106,9 @@ extract_zip() {
 
     # Unzip the file into the DOWNLOAD_DIR
     # -q: Quiet mode (suppress most output)
+    # -o: Overwrite existing files WITHOUT prompting
     # -d "${DOWNLOAD_DIR}": Extract files into the specified directory
-    if unzip -q "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}"; then
+    if unzip -q -o "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}"; then
         echo -e "${GREEN}  Extraction complete!${NC}"
         return 0
     else
