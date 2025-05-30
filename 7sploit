@@ -1,32 +1,125 @@
 #!/bin/bash
 
-set -e
+# This script downloads a specified file with a progress bar
+# and then attempts to launch it using the system's default opener.
 
-# Variables
-ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
-ZIP_NAME="7sploit.zip"
-APP_NAME="7sploit.app"
-TMP_DIR="/tmp/7sploit_install"
+# --- Configuration ---
+# IMPORTANT: Replace with the actual URL of the file you want to download.
+DOWNLOAD_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
 
-# Create temp directory
-mkdir -p "$TMP_DIR"
-cd "$TMP_DIR"
+# Define the directory where the file will be saved.
+# Using /tmp for temporary files, or you can change it to "$HOME/Downloads" for persistence.
+DOWNLOAD_DIR="/tmp" 
 
-# Download the zip file
-echo "⬇️  Downloading $ZIP_NAME..."
-curl -L "$ZIP_URL" -o "$ZIP_NAME"
+# Define the local filename. Ensure it's safe for your filesystem.
+FILE_NAME="7SploitReal.html"
 
-# Unzip the app
-echo "📦 Unzipping..."
-unzip -q "$ZIP_NAME"
+# Full path where the file will be saved
+DOWNLOAD_PATH="${DOWNLOAD_DIR}/${FILE_NAME}"
 
-# Move to Applications
-echo "🚀 Moving $APP_NAME to /Applications..."
-mv -f "$APP_NAME" /Applications/
+# --- Terminal Colors (for a better visual experience) ---
+GREEN='\033[0;32m' # Green text for success messages
+BLUE='\033[0;34m'  # Blue text for informational messages
+YELLOW='\033[0;33m' # Yellow text for warnings
+RED='\033[0;31m'   # Red text for error messages
+NC='\033[0m'       # No Color - Resets text color to default
 
-# Launch the app
-echo "🎉 Launching $APP_NAME..."
-open -a "/Applications/$APP_NAME"
+# --- Functions ---
 
-# Done
-echo "✅ 7sploit installed and launched."
+# Function to display a stylish header
+display_header() {
+    clear # Clear the terminal for a clean display
+    echo -e "${BLUE}
+ _______  _______  _______ _________ _______  _______ _________
+(  ____ )(  ____ )(  ___  )\__   __/(  ____ \(  ____ )\__   __/
+| (    )|| (    )|| (   ) |   ) (   | (    )|| (    )|   ) (   
+| (____)|| (____)|| (___) |   | |   | (____)|| (____)|   | |   
+|     __)|     __)|  ___  |   | |   |     __)|     __)|   | |   
+| (\ (   | (\ (   | (   ) |   | |   | (\ (   | (\ (   | |   
+| ) \ \__| ) \ \__| )   ( |   | |   | ) \ \__| ) \ \__| |   
+|/   \__/|/   \__/|/     \|   )_(   |/   \__/|/   \__/   )_(   
+                                                                
+${NC}"
+    echo -e "${GREEN}  7Sploit Downloader & Launcher${NC}"
+    echo -e "${YELLOW}  -----------------------------${NC}"
+    echo ""
+}
+
+# Function to download the file with progress
+download_file() {
+    echo -e "${BLUE}  Starting download...${NC}"
+    echo -e "  Source: ${YELLOW}${DOWNLOAD_URL}${NC}"
+    echo -e "  Destination: ${YELLOW}${DOWNLOAD_PATH}${NC}"
+    echo ""
+
+    # Create the download directory if it doesn't exist
+    mkdir -p "${DOWNLOAD_DIR}"
+
+    # Use curl for downloading with a progress bar
+    # -L: Follow HTTP redirects
+    # -o "${DOWNLOAD_PATH}": Save the output to the specified file path
+    # -#: Show a simple, compact progress bar (good for scripts)
+    # -f: Fail silently on HTTP errors (e.g., 404 Not Found)
+    # --retry 3: Retry the download up to 3 times on transient network errors
+    # --retry-delay 5: Wait 5 seconds between retries
+    if curl -L -o "${DOWNLOAD_PATH}" -# -f --retry 3 --retry-delay 5 "${DOWNLOAD_URL}"; then
+        echo -e "\n${GREEN}  Download complete!${NC}"
+        return 0 # Indicate success
+    else
+        echo -e "\n${RED}  Error: Download failed!${NC}"
+        echo -e "  Please check the URL, your internet connection, or try again."
+        return 1 # Indicate failure
+    fi
+}
+
+# Function to launch the downloaded file
+launch_file() {
+    if [[ -f "${DOWNLOAD_PATH}" ]]; then
+        echo -e "\n${BLUE}  Attempting to launch '${FILE_NAME}'...${NC}"
+        
+        # Detect OS and use appropriate command to open the file
+        if [[ "$(uname)" == "Darwin" ]]; then
+            # macOS: 'open' command
+            open "${DOWNLOAD_PATH}"
+        elif [[ "$(uname)" == "Linux" ]]; then
+            # Linux: 'xdg-open' command (common for most desktop environments)
+            xdg-open "${DOWNLOAD_PATH}"
+        else
+            echo -e "${YELLOW}  Warning: Cannot auto-launch on this operating system. Please open '${DOWNLOAD_PATH}' manually.${NC}"
+            return 1 # Indicate partial success/warning
+        fi
+        
+        echo -e "${GREEN}  Launch command sent. Check your browser or application.${NC}"
+        return 0 # Indicate success
+    else
+        echo -e "${RED}  Error: Downloaded file not found at '${DOWNLOAD_PATH}'. Cannot launch.${NC}"
+        return 1 # Indicate failure
+    fi
+}
+
+# --- Main Script Execution Flow ---
+
+# 1. Display the welcoming header
+display_header
+
+# 2. Check if 'curl' is installed, as it's required for downloading
+if ! command -v curl &> /dev/null; then
+    echo -e "${RED}Error: 'curl' is not installed or not in your PATH.${NC}"
+    echo -e "  Please install 'curl' to proceed. For example:"
+    echo -e "  ${YELLOW}  On macOS (with Homebrew): brew install curl${NC}"
+    echo -e "  ${YELLOW}  On Debian/Ubuntu: sudo apt-get install curl${NC}"
+    exit 1 # Exit if curl is not found
+fi
+
+# 3. Execute the download function
+if download_file; then
+    # 4. If download was successful, proceed to launch the file
+    launch_file
+else
+    # 5. If download failed, inform the user and exit
+    echo -e "${RED}  Script terminated due to download error. Please resolve the issue and try again.${NC}"
+    exit 1
+fi
+
+echo -e "\n${YELLOW}  Script finished. Have a great day!${NC}"
+echo ""
