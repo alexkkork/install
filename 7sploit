@@ -9,13 +9,26 @@ DOWNLOAD_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.z
 
 # Define the directory where the file will be saved.
 # Using /tmp for temporary files, or you can change it to "$HOME/Downloads" for persistence.
+# Ensure this directory is writable by the user running the script.
 DOWNLOAD_DIR="/tmp" 
 
-# Define the local filename. Ensure it's safe for your filesystem.
-FILE_NAME="7SploitReal.html"
+# Define the local filename for the downloaded ZIP archive.
+ZIP_FILE_NAME="7sploit.zip"
 
-# Full path where the file will be saved
-DOWNLOAD_PATH="${DOWNLOAD_DIR}/${FILE_NAME}"
+# Full path where the ZIP file will be saved
+DOWNLOAD_PATH="${DOWNLOAD_DIR}/${ZIP_FILE_NAME}"
+
+# Define the name of the directory that will be created when unzipping.
+# This is typically the name of the top-level folder inside the zip.
+EXTRACTED_DIR_NAME="7sploit" # Assuming the zip extracts to a folder named '7sploit'
+
+# Full path to the extracted directory
+EXTRACTED_PATH="${DOWNLOAD_DIR}/${EXTRACTED_DIR_NAME}"
+
+# Define the target executable or application bundle to launch AFTER unzipping.
+# For macOS, this is typically the .app bundle inside the extracted folder.
+# For Linux, it might be a specific executable file.
+LAUNCH_TARGET="${EXTRACTED_PATH}/7Sploit.app" # Assuming the app is named 7Sploit.app inside the extracted folder
 
 # --- Terminal Colors (for a better visual experience) ---
 GREEN='\033[0;32m' # Green text for success messages
@@ -72,27 +85,63 @@ download_file() {
     fi
 }
 
+# Function to extract the zip file
+extract_zip() {
+    echo -e "\n${BLUE}  Extracting '${ZIP_FILE_NAME}'...${NC}"
+    
+    # Check if 'unzip' is installed
+    if ! command -v unzip &> /dev/null; then
+        echo -e "${RED}Error: 'unzip' is not installed or not in your PATH.${NC}"
+        echo -e "  Please install 'unzip' to proceed. For example:"
+        echo -e "  ${YELLOW}  On Debian/Ubuntu: sudo apt-get install unzip${NC}"
+        echo -e "  ${YELLOW}  On macOS (usually pre-installed, or brew install unzip if missing)${NC}"
+        return 1
+    fi
+
+    # Remove any existing extracted directory to ensure a clean extraction
+    if [[ -d "${EXTRACTED_PATH}" ]]; then
+        echo -e "${YELLOW}  Removing existing extracted directory: ${EXTRACTED_PATH}${NC}"
+        rm -rf "${EXTRACTED_PATH}"
+    fi
+
+    # Unzip the file into the DOWNLOAD_DIR
+    # -q: Quiet mode (suppress most output)
+    # -d "${DOWNLOAD_DIR}": Extract files into the specified directory
+    if unzip -q "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}"; then
+        echo -e "${GREEN}  Extraction complete!${NC}"
+        return 0
+    else
+        echo -e "${RED}  Error: Failed to extract '${ZIP_FILE_NAME}'.${NC}"
+        echo -e "  The ZIP file might be corrupted or incomplete."
+        return 1
+    fi
+}
+
 # Function to launch the downloaded file
-launch_file() {
-    if [[ -f "${DOWNLOAD_PATH}" ]]; then
-        echo -e "\n${BLUE}  Attempting to launch '${FILE_NAME}'...${NC}"
+launch_application() {
+    if [[ -e "${LAUNCH_TARGET}" ]]; then # -e checks if file exists (can be any type)
+        echo -e "\n${BLUE}  Attempting to launch '${LAUNCH_TARGET}'...${NC}"
         
         # Detect OS and use appropriate command to open the file
         if [[ "$(uname)" == "Darwin" ]]; then
-            # macOS: 'open' command
-            open "${DOWNLOAD_PATH}"
+            # macOS: 'open' command for .app bundles
+            open "${LAUNCH_TARGET}"
         elif [[ "$(uname)" == "Linux" ]]; then
-            # Linux: 'xdg-open' command (common for most desktop environments)
-            xdg-open "${DOWNLOAD_PATH}"
+            # Linux: Check if it's an executable and run it, or use xdg-open for desktop files
+            if [[ -x "${LAUNCH_TARGET}" ]]; then # -x checks if file is executable
+                "${LAUNCH_TARGET}" & # Run in background
+            else
+                xdg-open "${LAUNCH_TARGET}" # Try opening with default application
+            fi
         else
-            echo -e "${YELLOW}  Warning: Cannot auto-launch on this operating system. Please open '${DOWNLOAD_PATH}' manually.${NC}"
+            echo -e "${YELLOW}  Warning: Cannot auto-launch on this operating system. Please open '${LAUNCH_TARGET}' manually.${NC}"
             return 1 # Indicate partial success/warning
         fi
         
-        echo -e "${GREEN}  Launch command sent. Check your browser or application.${NC}"
+        echo -e "${GREEN}  Launch command sent. Check your applications.${NC}"
         return 0 # Indicate success
     else
-        echo -e "${RED}  Error: Downloaded file not found at '${DOWNLOAD_PATH}'. Cannot launch.${NC}"
+        echo -e "${RED}  Error: Launch target not found at '${LAUNCH_TARGET}'. Cannot launch.${NC}"
         return 1 # Indicate failure
     fi
 }
@@ -113,10 +162,17 @@ fi
 
 # 3. Execute the download function
 if download_file; then
-    # 4. If download was successful, proceed to launch the file
-    launch_file
+    # 4. If download was successful, proceed to extract the file
+    if extract_zip; then
+        # 5. If extraction was successful, proceed to launch the application
+        launch_application
+    else
+        # 6. If extraction failed, inform the user and exit
+        echo -e "${RED}  Script terminated due to extraction error. Please resolve the issue and try again.${NC}"
+        exit 1
+    fi
 else
-    # 5. If download failed, inform the user and exit
+    # 7. If download failed, inform the user and exit
     echo -e "${RED}  Script terminated due to download error. Please resolve the issue and try again.${NC}"
     exit 1
 fi
