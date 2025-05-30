@@ -108,7 +108,9 @@ extract_zip() {
     # -q: Quiet mode (suppress most output)
     # -o: Overwrite existing files WITHOUT prompting
     # -d "${DOWNLOAD_DIR}": Extract files into the specified directory
-    if unzip -q -o "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}"; then
+    # -qq: Even quieter, suppresses warnings about __MACOSX files
+    # < /dev/null: Redirect stdin from /dev/null to prevent unzip from asking for input
+    if unzip -q -o "${DOWNLOAD_PATH}" -d "${DOWNLOAD_DIR}" < /dev/null; then
         echo -e "${GREEN}  Extraction complete!${NC}"
         return 0
     else
