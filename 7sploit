@@ -20,8 +20,8 @@ echo "             by Alex and 7Sleeps"
 echo ""
 
 if [ -d "$APP_PATH" ]; then
-  echo "✅  $APP_NAME is already installed. Launching..."
-  open -a "$APP_NAME"
+  echo "✅  $APP_NAME is already installed. Launching it now..."
+  open "$APP_PATH"
   exit 0
 fi
 
@@ -30,14 +30,14 @@ echo "🔧 Creating temp directory..."
 mkdir -p "$TMP_DIR"
 cd "$TMP_DIR"
 
-echo "🔧 Downloading 7sploit.zip from GitHub..."
+echo "🔧 Downloading $APP_NAME zip from GitHub..."
 curl -L "$ZIP_URL" -o 7sploit.zip
 
 echo "🔧 Unpacking application..."
 unzip -oq 7sploit.zip
 
 if [ ! -d "$APP_NAME" ]; then
-  echo "❌  Error: $APP_NAME not found in zip!"
+  echo "❌  Error: $APP_NAME not found after unzip!"
   exit 1
 fi
 
@@ -45,6 +45,6 @@ echo "🔧 Moving to /Applications..."
 sudo mv -f "$APP_NAME" /Applications/
 
 echo "🚀 Launching $APP_NAME..."
-open -a "$APP_NAME"
+open "$APP_PATH"
 
-echo "🎉 Done! $APP_NAME installed successfully."
+echo "🎉 Done! $APP_NAME installed and launched successfully."
