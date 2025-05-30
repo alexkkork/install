@@ -1,50 +1,57 @@
 #!/bin/bash
 
-set -e
-
 APP_NAME="7sploit.app"
 APP_PATH="/Applications/$APP_NAME"
 ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
-TMP_DIR="/tmp/7sploit_installer"
+TMP_DIR=$(mktemp -d)
+ZIP_FILE="$TMP_DIR/7sploit.zip"
 
+# Fancy title
 clear
-echo -e "\033[1;34m"
-echo "███████╗███████╗██████╗ ██╗      ██████╗ ██╗████████╗"
-echo "██╔════╝██╔════╝██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝"
-echo "███████╗█████╗  ██████╔╝██║     ██║   ██║██║   ██║   "
-echo "╚════██║██╔══╝  ██╔═══╝ ██║     ██║   ██║██║   ██║   "
-echo "███████║███████╗██║     ███████╗╚██████╔╝██║   ██║   "
-echo "╚══════╝╚══════╝╚═╝     ╚══════╝ ╚═════╝ ╚═╝   ╚═╝   "
-echo -e "\033[0m"
-echo "             by Alex and 7Sleeps"
+echo ""
+echo "███████╗███████╗██████╗  ██████╗ ██╗      ██████╗ ██╗████████╗"
+echo "╚══███╔╝██╔════╝██╔══██╗██╔═══██╗██║     ██╔═══██╗██║╚══██╔══╝"
+echo "  ███╔╝ █████╗  ██████╔╝██║   ██║██║     ██║   ██║██║   ██║   "
+echo " ███╔╝  ██╔══╝  ██╔══██╗██║   ██║██║     ██║   ██║██║   ██║   "
+echo "███████╗███████╗██║  ██║╚██████╔╝███████╗╚██████╔╝██║   ██║   "
+echo "╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝   "
+echo "             🚀 By Alex and 7Sleeps | Installing $APP_NAME"
 echo ""
 
-if [ -d "$APP_PATH" ]; then
-  echo "✅  $APP_NAME is already installed. Launching it now..."
-  open "$APP_PATH"
-  exit 0
+# Step 1: Remove existing apps
+echo "🧹 Checking for old installations..."
+FOUND=false
+for path in "$APP_PATH" "./$APP_NAME"; do
+    if [ -d "$path" ]; then
+        echo "🗑️  Removing old app at: $path"
+        rm -rf "$path"
+        FOUND=true
+    fi
+done
+$FOUND || echo "✅ No previous version found."
+
+# Step 2: Download
+echo "⬇️  Downloading $APP_NAME..."
+curl -L "$ZIP_URL" -o "$ZIP_FILE"
+
+# Step 3: Unzip
+echo "📦 Unzipping..."
+unzip -o -q "$ZIP_FILE" -d "$TMP_DIR"
+
+# Step 4: Find and move app to /Applications
+EXTRACTED_APP=$(find "$TMP_DIR" -name "$APP_NAME" -type d | head -n 1)
+if [ -d "$EXTRACTED_APP" ]; then
+    echo "📁 Installing to /Applications..."
+    mv "$EXTRACTED_APP" "/Applications/"
+else
+    echo "❌ Error: $APP_NAME not found after extraction."
+    exit 1
 fi
 
-echo "🧠  Installing $APP_NAME..."
-echo "🔧 Creating temp directory..."
-mkdir -p "$TMP_DIR"
-cd "$TMP_DIR"
-
-echo "🔧 Downloading $APP_NAME zip from GitHub..."
-curl -L "$ZIP_URL" -o 7sploit.zip
-
-echo "🔧 Unpacking application..."
-unzip -oq 7sploit.zip
-
-if [ ! -d "$APP_NAME" ]; then
-  echo "❌  Error: $APP_NAME not found after unzip!"
-  exit 1
-fi
-
-echo "🔧 Moving to /Applications..."
-sudo mv -f "$APP_NAME" /Applications/
-
+# Step 5: Launch
 echo "🚀 Launching $APP_NAME..."
-open "$APP_PATH"
+open -a "/Applications/$APP_NAME"
 
-echo "🎉 Done! $APP_NAME installed and launched successfully."
+# Done
+echo ""
+echo "✅ 7Sploit successfully installed and launched!"
