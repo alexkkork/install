@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+# Variables
+ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/7sploit.zip"
+ZIP_NAME="7sploit.zip"
+APP_NAME="7sploit.app"
+TMP_DIR="/tmp/7sploit_install"
+
+# Create temp directory
+mkdir -p "$TMP_DIR"
+cd "$TMP_DIR"
+
+# Download the zip file
+echo "⬇️  Downloading $ZIP_NAME..."
+curl -L "$ZIP_URL" -o "$ZIP_NAME"
+
+# Unzip the app
+echo "📦 Unzipping..."
+unzip -q "$ZIP_NAME"
+
+# Move to Applications
+echo "🚀 Moving $APP_NAME to /Applications..."
+mv -f "$APP_NAME" /Applications/
+
+# Launch the app
+echo "🎉 Launching $APP_NAME..."
+open -a "/Applications/$APP_NAME"
+
+# Done
+echo "✅ 7sploit installed and launched."
