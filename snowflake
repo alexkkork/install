@@ -1,57 +1,62 @@
 #!/bin/bash
 
-set -euo pipefail
+APP_NAME="Snowflake UI"
+APP_DIR="/Applications/Snowflake UI.app"
+ZIP_URL="https://github.com/alexkkork/install/releases/download/snowflake/Snowflake.UI.zip"
 
-APP_ZIP_URL="https://github.com/alexkkork/install/raw/refs/heads/main/Snowflake%20UI%202.zip%20alias"
-APP_NAME="Snowflake UI 2.app"
-APP_BASENAME="Snowflake UI 2"
-TMP_DIR=$(mktemp -d)
+echo ""
+echo "❄️  ================================================="
+echo "❄️   Installing $APP_NAME"
+echo "❄️   by Dayte"
+echo "❄️  ================================================="
+echo ""
 
-echo "❄️  Snowflake UI 2 Installer"
-echo "==========================="
-echo "🧼 Removing old versions..."
+sleep 1
+echo "🧼 Checking for existing installations..."
+if [ -d "$APP_DIR" ]; then
+    echo "🧨 Existing installation found. Removing..."
+    rm -rf "$APP_DIR"
+fi
 
-# Define common locations to check
-POSSIBLE_LOCATIONS=(
-  "/Applications"
-  "$HOME/Applications"
-  "$HOME/Desktop"
-  "$HOME/Downloads"
-)
+# Remove any leftovers by name (just in case)
+echo "🧹 Cleaning up any old versions..."
+find /Applications -type d -name "*Snowflake UI*" -exec rm -rf {} +
 
-# Remove matching .app folders from locations
-for loc in "${POSSIBLE_LOCATIONS[@]}"; do
-  find "$loc" -maxdepth 1 -type d -name "$APP_BASENAME*" -exec rm -rf {} +
-done
+# Create a temp folder
+TEMP_DIR=$(mktemp -d)
+echo "📁 Created temporary directory: $TEMP_DIR"
 
-# Also check recursively in /Applications in case of odd installs
-find /Applications -type d -name "$APP_BASENAME*.app" -exec rm -rf {} + 2>/dev/null || true
+# Download the zip
+echo "📦 Downloading $APP_NAME from GitHub Releases..."
+curl -L -o "$TEMP_DIR/app.zip" "$ZIP_URL"
 
-echo "📦 Downloading latest version..."
-curl -L "$APP_ZIP_URL" -o "$TMP_DIR/app.zip"
-
-echo "🧩 Unpacking archive..."
-unzip -q "$TMP_DIR/app.zip" -d "$TMP_DIR"
-
-# Locate the .app in unpacked folder
-APP_PATH=$(find "$TMP_DIR" -type d -name "*.app" | head -n 1)
-if [[ ! -d "$APP_PATH" ]]; then
-    echo "❌ App not found in zip. Exiting."
-    rm -rf "$TMP_DIR"
+# Check download success
+if [ $? -ne 0 ]; then
+    echo "❌ Download failed. Exiting."
     exit 1
 fi
 
-echo "📁 Installing to /Applications..."
-mv "$APP_PATH" "/Applications/"
+echo "📦 Unzipping archive..."
+unzip -q "$TEMP_DIR/app.zip" -d "$TEMP_DIR"
 
-# Extract app name from found path
-FINAL_APP_NAME=$(basename "$APP_PATH")
+# Find .app and move it
+FOUND_APP=$(find "$TEMP_DIR" -name "*.app" -maxdepth 2 | head -n 1)
+if [ -z "$FOUND_APP" ]; then
+    echo "❌ No .app found inside the zip. Exiting."
+    exit 1
+fi
 
-echo "🚀 Launching $FINAL_APP_NAME..."
-open -a "/Applications/$FINAL_APP_NAME"
+echo "🚚 Moving $APP_NAME to /Applications..."
+mv -f "$FOUND_APP" "/Applications/"
 
-echo "✅ Installation complete!"
-echo "🧊 Enjoy Snowflake UI 2."
+# Launch the app
+echo "🚀 Launching $APP_NAME..."
+open "/Applications/Snowflake UI.app"
 
 # Cleanup
-rm -rf "$TMP_DIR"
+echo "🧽 Cleaning up..."
+rm -rf "$TEMP_DIR"
+
+echo ""
+echo "✅ $APP_NAME installed and launched successfully!"
+echo "❄️  by Dayte"
